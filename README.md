@@ -10,14 +10,26 @@ Nothing here is executed on installation. A pack adds types, fields and
 relations to `docket.yaml` and copies templates, saved views and documents in —
 and the whole of it arrives as a diff you read before you commit it.
 
-| app | what it adds |
+| app | what it is, and what it replaces |
 |---|---|
-| `tests` | test plans, tests and runs, and the verb that says what a test covers |
-| `time` | time logged against work, as notes rather than as a number nobody can audit |
-| `risks` | a risk register: likelihood, impact, and what each risk threatens |
-| `okr` | objectives and key results, and what contributes to them |
-| `incidents` | incidents, severity, and the postmortem that has to follow |
-| `intake` | requests from outside the team, and what they became |
+| `tests` | test plans, tests and runs, and the verb that says what a test covers — Xray, Zephyr, AIO, QMetry (13 of the top 100) |
+| `time` | hours as worklog notes rather than a number on a card — Tempo and the ten others |
+| `risks` | a register: likelihood, impact, and what each risk threatens — Risk Register |
+| `okr` | objectives, key results and what contributes to them — OKR for Jira |
+| `incidents` | incidents and the postmortem that has to follow, as two tasks |
+| `intake` | requests from outside the team, kept apart from the work they became |
+| `time-in-status` | how long work sits in each column — Time in Status, Timepiece, Status Time Reports (4 apps) |
+| `anomalies` | what is odd about how the work is connected — nothing in the marketplace does this |
+| `workload` | who is carrying what and how much — the capacity reports |
+| `checklists` | progress through the acceptance list, on the task and across the board (3 apps) |
+| `estimation` | what has not been sized, so a planning session has an agenda — Planning Poker, Agile Poker |
+| `portfolio` | containers and how much of what is under them is done — Structure, BigPicture (8 apps) |
+
+The ones that draw something run a program, and a program is run only by a
+server started with `--programs`. They ask **docket itself** for the data —
+`docket export --format csv --fields …`, `docket report time-in-status`,
+`docket anomalies` — so the awkward reading stays in one tested place and an app
+is a few lines of formatting.
 
 ## What a pack may not do
 

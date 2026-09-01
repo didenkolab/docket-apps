@@ -1,0 +1,8 @@
+name: portfolio
+version: "1"
+description: The hierarchy with its roll-ups — what the portfolio apps draw
+surfaces:
+  pages:
+    - name: portfolio
+      title: Portfolio
+      run: hooks/portfolio.sh

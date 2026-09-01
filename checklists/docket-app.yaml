@@ -1,0 +1,23 @@
+name: checklists
+version: "1"
+description: Progress through the acceptance list, on the task and across the board
+
+# Three of the marketplace's top hundred are checklists. The list is already
+# Markdown in the body and Obsidian already draws it; what was missing was the
+# count, and somewhere to see it.
+vocabulary:
+  fields:
+    - name: definition_of_done
+      label: Definition of done
+      kind: choice
+      choices: [team, release, hotfix]
+      help: Which list this work is held to. The lists themselves are documents.
+surfaces:
+  panels:
+    - name: progress
+      title: Acceptance
+      run: hooks/progress.sh
+  pages:
+    - name: acceptance
+      title: Acceptance across the board
+      run: hooks/across.sh
