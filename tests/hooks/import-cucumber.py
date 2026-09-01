@@ -127,7 +127,7 @@ for ident, (result, why, whole) in sorted(matched.items()):
 
 print(f"{execution}: {len(matched)} runs written.")
 for result in ("passed", "failed", "aborted"):
-    n = sum(1 for r, _ in matched.values() if r == result)
+    n = sum(1 for r, _, _ in matched.values() if r == result)
     if n:
         print(f"  {result}: {n}")
 if missing:
