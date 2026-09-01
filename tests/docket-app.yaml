@@ -1,5 +1,5 @@
 name: tests
-version: "8"
+version: "9"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a

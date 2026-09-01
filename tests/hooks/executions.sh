@@ -56,13 +56,6 @@ else
   # What failed, across every execution. The table says how many; this says
   # which — and which is the only part anybody acts on.
   printf '## What failed\n\n'
-  "$docket" export --format csv --fields type,parent,result,runs,evidence "$DOCKET_ROOT" |
-    awk -F',' 'NR > 1 && $1 == "test_run" && $3 == "failed" {
-      why = $5; gsub(/^"|"$/, "", why)
-      printf "- [%s](/task/%s) in [%s](/task/%s)\n", $4, $4, $2, $2
-      if (why != "") printf "  - %s\n", why
-      seen++
-    }
-    END { if (!seen) printf "Nothing has failed in any recorded execution.\n" }'
+  python3 hooks/failures.py || true
 fi
 rm -f /tmp/docket-exec.$$

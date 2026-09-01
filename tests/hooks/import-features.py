@@ -81,6 +81,7 @@ def freeze(path, marks):
 
 
 made = skipped = guessed = frozen = 0
+written_now, shared = set(), []
 for base, _, files in os.walk(where):
     for name in sorted(files):
         if not name.endswith(".feature"):
@@ -96,7 +97,15 @@ for base, _, files in os.walk(where):
             if wanted_tag and wanted_tag not in s["tags"]:
                 continue
             if ident in known:
-                skipped += 1
+                # Twice for two reasons, and they are not the same. Already in
+                # the vault: this ran before, nothing to do. Already in this
+                # run: two scenarios carry one case id, which the automation
+                # says are one case — so one test, and a line at the end so
+                # somebody can decide whether the tags are wrong.
+                if ident in written_now:
+                    shared.append(ident)
+                else:
+                    skipped += 1
                 continue
             if dry:
                 made += 1
@@ -130,11 +139,20 @@ for base, _, files in os.walk(where):
             if tags:
                 args.append("tags=" + ",".join(tags[:6]))
             run("set", *args, "--quiet")
+            written_now.add(ident)
             made += 1
         if marks:
             freeze(os.path.join(base, name), marks)
 
 print(f"{made} tests written, {skipped} already here")
+if shared:
+    once = sorted(set(shared))
+    print(f"{len(shared)} scenarios share a case id with another scenario, so they "
+          f"became one test each rather than one test per scenario. "
+          f"{len(once)} ids are reused: " + ", ".join(once[:8]) +
+          ("…" if len(once) > 8 else ""))
+    print("If those are meant to be separate cases, the automation's tags are "
+          "the place to fix it.")
 if guessed:
     print(f"{guessed} scenarios carry no case id, so one was derived from the "
           "feature and the scenario name.")
