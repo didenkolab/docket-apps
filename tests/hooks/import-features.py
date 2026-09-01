@@ -1,20 +1,31 @@
-"""Turn a Cucumber project's scenarios into tests in the vault.
+"""Turn a Cucumber project's cases into tests in the vault.
 
-One task per scenario. The case id tag is the identity — `@ACME-ADM-002` — and
-nothing else is: a scenario's name is written for people and gets improved, and
-a test whose identity is its name loses its history the first time somebody
-rewords it.
+One task per **case**, not per scenario. That distinction cost a rewrite and is
+the whole design:
 
-A scenario nobody tagged still gets one, derived from the feature file and the
-scenario's name (see caseid.py). Skipping them was worse: a fifth of a real
-suite carries no tag, and a fifth of every run then had nothing to land on.
+  a case is a thing that must be true — `ACME-INV-055`, and the tag is its name;
+  a scenario is one way of making it true.
+
+One scenario can settle two cases at once (`@ACME-INV-049 @ACME-INV-048` on the
+paid-invoice walk), and two scenarios can settle one case from different
+directions. Reading a scenario as a test made both of those look like duplicate
+ids in a suite that had none, and a real board lost 151 tests to a cleanup that
+was fixing nothing.
+
+A scenario nobody tagged has no case, so one is derived for it from the feature
+file and the scenario's name (caseid.py). Skipping them was worse: a fifth of a
+real suite carries no tag, and a fifth of every run then had nothing to land on.
 --write-tags puts the derived id back into the .feature, which freezes it
 against a rename; it is the only thing here that touches the automation repo,
 and it is off unless asked for.
 
 Read by import-features.sh, which passes the features directory.
 """
-import os, re, subprocess, sys
+import json
+import os
+import re
+import subprocess
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caseid
@@ -25,11 +36,12 @@ where = sys.argv[1]
 rest = sys.argv[2:]
 wanted_tag = next((a for a in rest if a.startswith("@")), "")
 project = next((a.split("=", 1)[1] for a in rest if a.startswith("--project=")), "")
+prefix = next((a.split("=", 1)[1] for a in rest if a.startswith("--prefix=")), project or "ACME")
 dry = "--dry-run" in rest
 write_tags = "--write-tags" in rest
-prefix = next((a.split("=", 1)[1] for a in rest if a.startswith("--prefix=")), project or "ACME")
 
-CASE_ID = caseid.WRITTEN
+SCENARIO = re.compile(r"^(Scenario|Scenario Outline|Example):")
+
 
 def run(*args):
     out = subprocess.run([docket, *args], capture_output=True, text=True, cwd=root)
@@ -37,40 +49,41 @@ def run(*args):
         sys.exit((out.stderr or out.stdout).strip())
     return out.stdout.strip()
 
+
 # What is already here, by case id, so running this twice does not double.
-import json
 known = {}
 for t in json.loads(run("export", "--format", "json")):
     ident = (t.get("fields") or {}).get("automation_id", "").strip()
     if ident:
         known[ident] = t["key"]
 
-def scenarios(path):
-    """Every scenario in one .feature: its tags, name, and the steps under it."""
-    feature, tags, out = "", [], []
-    current = None
+
+def scenarios(path, name):
+    """Every scenario in one .feature: its tags, name, steps, and where it is.
+
+    Tags accumulate across lines, because Gherkin says they do — a tag line,
+    a comment, another tag line, then the scenario, and all of them apply.
+    """
+    feature, tags, out, current = "", [], [], None
     for number, line in enumerate(open(path, encoding="utf-8").read().splitlines()):
         bare = line.strip()
         if bare.startswith("Feature:"):
-            feature = bare[len("Feature:"):].strip()
-            tags = []
+            feature, tags = bare[len("Feature:"):].strip(), []
             continue
         if bare.startswith("@"):
-            tags = bare.split()
+            tags = tags + bare.split()
             continue
-        if re.match(r"^(Scenario|Scenario Outline|Example):", bare):
-            if current:
-                out.append(current)
-            current = {"feature": feature, "tags": tags, "file": path,
+        if SCENARIO.match(bare):
+            current = {"feature": feature, "tags": tags, "file": name,
                        "line": number, "indent": line[:len(line) - len(bare)],
                        "name": bare.split(":", 1)[1].strip(), "steps": []}
+            out.append(current)
             tags = []
             continue
         if current is not None and bare and not bare.startswith("#"):
             current["steps"].append(bare)
-    if current:
-        out.append(current)
     return out
+
 
 def freeze(path, marks):
     """Put the derived tags into the .feature, above the scenarios they name."""
@@ -80,79 +93,103 @@ def freeze(path, marks):
     open(path, "w", encoding="utf-8").write("".join(lines))
 
 
-made = skipped = guessed = frozen = 0
-written_now, shared = set(), []
+# Every scenario first, then the cases they settle. Two passes, because a case
+# is only whole once every file has been read: the two scenarios that cover
+# ACME-INV-055 sit in different folders.
+found = []
 for base, _, files in os.walk(where):
     for name in sorted(files):
-        if not name.endswith(".feature"):
+        if name.endswith(".feature"):
+            found.append((os.path.join(base, name), name))
+found.sort()
+
+cases, order, guessed, frozen = {}, [], 0, 0
+for path, name in found:
+    marks = []
+    for s in scenarios(path, name):
+        if wanted_tag and wanted_tag not in s["tags"]:
             continue
-        marks = []
-        for s in scenarios(os.path.join(base, name)):
-            ident, told = caseid.identity(s["tags"], name, s["name"], prefix)
-            if not told:
-                guessed += 1
-                if write_tags and not dry:
-                    marks.append((s["line"], s["indent"], ident))
-                    frozen += 1
-            if wanted_tag and wanted_tag not in s["tags"]:
-                continue
-            if ident in known:
-                # Twice for two reasons, and they are not the same. Already in
-                # the vault: this ran before, nothing to do. Already in this
-                # run: two scenarios carry one case id, which the automation
-                # says are one case — so one test, and a line at the end so
-                # somebody can decide whether the tags are wrong.
-                if ident in written_now:
-                    shared.append(ident)
-                else:
-                    skipped += 1
-                continue
-            if dry:
-                made += 1
-                continue
+        ids = caseid.all_written(s["tags"])
+        if not ids:
+            derived = caseid.derived(name, s["name"], prefix)
+            ids = [derived]
+            s["derived"] = True
+            guessed += 1
+            if write_tags and not dry:
+                marks.append((s["line"], s["indent"], derived))
+                frozen += 1
+        for ident in ids:
+            if ident not in cases:
+                cases[ident] = []
+                order.append(ident)
+            cases[ident].append(s)
+    if marks:
+        freeze(path, marks)
 
-            # `docket new` prints the key and the path it wrote, which is why
-            # this does not ask for the path again: an export per scenario is
-            # a 3 MB read eight hundred times over.
-            made_line = run("new", s["name"][:120], "--type", "test",
-                            *(["--project", project] if project else []))
-            key, at = made_line.split(None, 1)
-            body = ["## Scenario", "", "```gherkin"]
-            body += ["  " + step for step in s["steps"]]
-            body += ["```", "", "From `" + s["feature"] + "` in the automation repository."]
-            body += ["Identity is the case id, not this title: a title gets improved."] if told else [
-                "**No case id in the automation**, so this one was derived from the feature "
-                "file and the scenario name. Rename the scenario and it becomes a different "
-                "test; tag the scenario `@" + ident + "` to settle it."]
-            with open(os.path.join(root, at.strip()), "a", encoding="utf-8") as f:
-                f.write("\n" + "\n".join(body) + "\n")
+made = skipped = 0
+for ident in order:
+    if ident in known:
+        skipped += 1
+        continue
+    covered = cases[ident]
+    told = not covered[0].get("derived")
+    if dry:
+        made += 1
+        continue
 
-            # One call, not three: eight hundred scenarios is eight hundred
-            # processes per property otherwise.
-            args = [key, "automation_id=" + ident, "automated=true"]
-            if not told:
-                # Recorded, because a derived id is a guess about identity and
-                # anything reading this later deserves to know which ids the
-                # automation says and which the tool worked out.
-                args.append("generated=true")
-            tags = [t[1:] for t in s["tags"] if not CASE_ID.match(t) and t != "@acme"]
-            if tags:
-                args.append("tags=" + ",".join(tags[:6]))
-            run("set", *args, "--quiet")
-            written_now.add(ident)
-            made += 1
-        if marks:
-            freeze(os.path.join(base, name), marks)
+    # `docket new` prints the key and the path it wrote, which is why this does
+    # not ask for the path again: an export per case is a 3 MB read seven
+    # hundred times over.
+    made_line = run("new", covered[0]["name"][:120], "--type", "test",
+                    *(["--project", project] if project else []))
+    key, at = made_line.split(None, 1)
 
-print(f"{made} tests written, {skipped} already here")
+    body = []
+    for s in covered:
+        if len(covered) > 1:
+            body += ["## " + s["name"], ""]
+        else:
+            body += ["## Scenario", ""]
+        body += ["```gherkin"] + ["  " + step for step in s["steps"]] + ["```", ""]
+        body += ["From `" + s["feature"] + "` in `" + s["file"] + "`.", ""]
+    if len(covered) > 1:
+        body += ["This case is settled by " + str(len(covered)) + " scenarios. "
+                 "A case is a thing that must be true; a scenario is one way of "
+                 "making it true, and a result from any of them is a result for "
+                 "this case.", ""]
+    if told:
+        body += ["Identity is the case id, not this title: a title gets improved."]
+    else:
+        body += ["**No case id in the automation**, so this one was derived from the "
+                 "feature file and the scenario name. Rename the scenario and it "
+                 "becomes a different test; tag the scenario `@" + ident + "` to "
+                 "settle it."]
+    with open(os.path.join(root, at.strip()), "a", encoding="utf-8") as f:
+        f.write("\n" + "\n".join(body) + "\n")
+
+    # One call, not three: seven hundred cases is seven hundred processes per
+    # property otherwise.
+    args = [key, "automation_id=" + ident, "automated=true"]
+    if not told:
+        args.append("generated=true")
+    tags = []
+    for s in covered:
+        for tag in s["tags"]:
+            bare = tag.lstrip("@")
+            if not caseid.WRITTEN.match(tag) and bare != "acme" and bare not in tags:
+                tags.append(bare)
+    if tags:
+        args.append("tags=" + ",".join(tags[:6]))
+    run("set", *args, "--quiet")
+    known[ident] = key
+    made += 1
+
+shared = sum(1 for ident in cases if len(cases[ident]) > 1)
+print(f"{made} tests written, {skipped} already here — one per case, "
+      f"from {sum(len(v) for v in cases.values())} scenario tags.")
 if shared:
-    once = sorted(set(shared))
-    print(f"{len(shared)} scenarios share a case id with another scenario, so they "
-          f"became one test each rather than one test per scenario. "
-          f"{len(once)} ids are reused: " + ", ".join(once[:8]) +
-          ("…" if len(once) > 8 else ""))
-    print("If those are meant to be separate cases, the automation's tags are "
-          "the place to fix it.")
+    print(f"{shared} cases are settled by more than one scenario, which is not a "
+          "duplicate: each test carries every scenario that covers it.")
 if guessed:
     print(f"{guessed} scenarios carry no case id, so one was derived from the "
           "feature and the scenario name.")

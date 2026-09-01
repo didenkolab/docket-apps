@@ -109,6 +109,19 @@ def blamed(path):
     return out
 
 
+def write(test, keys, why, fresh):
+    with open(os.path.join(root, test["path"]), "a", encoding="utf-8") as f:
+        f.write("\n## What this covers\n\n")
+        f.write("Derived, not declared — correct it by editing the "
+                "`tests:` links above.\n\n")
+        # The keys are plain here on purpose: the links live in
+        # `tests:` above, and a second set of them in the body would
+        # be two things to keep true instead of one.
+        for key, said in zip(keys, why):
+            if key in fresh:
+                f.write("- %s — %s\n" % (key, said))
+
+
 linked = touched = 0
 for base, _, files in os.walk(where):
     for name in sorted(files):
@@ -121,11 +134,9 @@ for base, _, files in os.walk(where):
         by_line = blamed(path)
 
         for s in found:
-            ident, _ = caseid.identity(s["tags"], name, s["name"],
-                                       project or "ACME")
-            test = tests.get(ident)
-            if not test:
-                continue
+            ids = caseid.all_written(s["tags"])
+            if not ids:
+                ids = [caseid.derived(name, s["name"], project or "ACME")]
 
             from_history, from_text = [], []
             for number in range(s["from"], s["to"] + 1):
@@ -151,26 +162,24 @@ for base, _, files in os.walk(where):
             if not keys:
                 continue
 
-            already = (test.get("relations") or {}).get("tests", [])
-            fresh = [k for k in keys if k not in already]
-            if not fresh:
-                continue
-            touched += 1
-            linked += len(fresh)
-            if dry:
-                continue
-            run("set", test["key"], "tests=" + ",".join(already + fresh), "--quiet")
-
-            with open(os.path.join(root, test["path"]), "a", encoding="utf-8") as f:
-                f.write("\n## What this covers\n\n")
-                f.write("Derived, not declared — correct it by editing the "
-                        "`tests:` links above.\n\n")
-                # The keys are plain here on purpose: the links live in
-                # `tests:` above, and a second set of them in the body would
-                # be two things to keep true instead of one.
-                for key, said in zip(keys, why):
-                    if key in fresh:
-                        f.write("- %s — %s\n" % (key, said))
+            # Every case this scenario settles gets the link: the work it was
+            # written for is the work it was written for, however many cases it
+            # closes at once.
+            for ident in ids:
+                test = tests.get(ident)
+                if not test:
+                    continue
+                already = (test.get("relations") or {}).get("tests", [])
+                fresh = [k for k in keys if k not in already]
+                if not fresh:
+                    continue
+                touched += 1
+                linked += len(fresh)
+                if dry:
+                    continue
+                run("set", test["key"], "tests=" + ",".join(already + fresh), "--quiet")
+                test.setdefault("relations", {})["tests"] = already + fresh
+                write(test, keys, why, fresh)
 
 print(f"{touched} tests now point at work, with {linked} links between them.")
 if dry:

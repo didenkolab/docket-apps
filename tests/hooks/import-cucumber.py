@@ -43,9 +43,13 @@ for feature in json.load(open(report, encoding="utf-8")):
     for e in feature.get("elements", []):
         if e.get("type") == "background":
             continue
-        ident, told = caseid.identity(caseid.tags_of(e), uri, e.get("name", ""), prefix)
-        if not told:
-            derived.add(ident)
+        # Every case this scenario settles, not just the first: a scenario
+        # tagged with two case ids is a result for both, and reading only the
+        # first left half the suite's coverage with no result at all.
+        idents = caseid.all_written(caseid.tags_of(e))
+        if not idents:
+            idents = [caseid.derived(uri, e.get("name", ""), prefix)]
+            derived.add(idents[0])
         steps = [s.get("result", {}) for s in e.get("steps", []) if "result" in s]
         if not steps:
             continue
@@ -64,16 +68,22 @@ for feature in json.load(open(report, encoding="utf-8")):
         # A Scenario Outline is one test and several rows in the report. The
         # test failed if any row did — reporting the last row's result would
         # make a suite green because its final example happened to pass.
-        if outcome.get(ident, ("", "", ""))[0] == "failed":
-            continue
+
         # The whole message, not the summary line: the summary is what a table
         # can hold, and the stack is what somebody fixing it reads. Both, in
         # different places, so neither has to be looked up elsewhere.
         whole = ""
         if result[0] == "failed":
             whole = (broke.get("error_message") or "").strip()
-        outcome[ident] = (result[0], result[1], whole)
-        names[ident] = e.get("name", "")
+        for ident in idents:
+            # A Scenario Outline is one case and several rows in the report, and
+            # a case settled by two scenarios is one case and two results. The
+            # case failed if any of them did — taking the last would make a
+            # suite green because its final example happened to pass.
+            if outcome.get(ident, ("", "", ""))[0] == "failed":
+                continue
+            outcome[ident] = (result[0], result[1], whole)
+            names[ident] = e.get("name", "")
 
 if not outcome:
     sys.exit("nothing in that report has a result: a dry run reports every step skipped")

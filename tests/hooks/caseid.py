@@ -35,11 +35,30 @@ DERIVED = re.compile(r"^@?[A-Z]+-GEN-[0-9A-F]{6}$")
 
 
 def written(tags):
-    """The case id in a scenario's tags, or empty."""
+    """The first case id in a scenario's tags, or empty."""
+    said = all_written(tags)
+    return said[0] if said else ""
+
+
+def all_written(tags):
+    """Every case id in a scenario's tags, in the order written.
+
+    More than one is normal and is not a mistake. A case is a thing that must
+    be true; a scenario is one way of making it true. One scenario can settle
+    two cases at once — `@ACME-INV-049 @ACME-INV-048` on the paid-invoice walk —
+    and two scenarios can each settle the same case from different directions.
+    Reading only the first tag turned both of those into a duplicate that was
+    not there, and deleted work that was.
+
+    Gherkin also lets the tags sit on several lines before the scenario, with
+    comments in between, and they all apply. Whatever collects them has to
+    collect all of them.
+    """
+    out = []
     for tag in tags:
-        if WRITTEN.match(tag):
-            return tag.lstrip("@")
-    return ""
+        if WRITTEN.match(tag) and tag.lstrip("@") not in out:
+            out.append(tag.lstrip("@"))
+    return out
 
 
 def derived(feature_file, scenario_name, prefix="ACME"):
