@@ -111,6 +111,45 @@ both resolve. A key that is not a link is a key somebody has to copy out.
   relation with a different inverse, a page that is already drawn by something
   else — each is refused by name, and nothing is written.
 
+## Letting the outside in
+
+Two ways, and the first is simpler than it looks.
+
+**A commit.** CI has a clone. The notes are files. A script that writes them and
+pushes is the whole delivery — no endpoint, no secret to rotate, and the audit
+trail is the commit somebody can read. This is the default: use it unless CI
+must not have push rights.
+
+**An inbox**, for when it must not:
+
+```yaml
+inbox:
+  - name: junit
+    run: hooks/receive-junit.sh
+    secret_env: DOCKET_JUNIT_SECRET
+```
+
+Then `POST /in/junit` with `X-Docket-Secret` runs the program with the body on
+stdin, and what it writes is committed. The secret's **name** is in the
+repository and the secret is not: one in a file everybody clones is not a
+secret. An inbox that names none is refused on any server that signs people in.
+
+## Buttons
+
+```yaml
+actions:
+  - name: run-tests
+    title: Run the scenarios
+    on: feature          # the page it appears on
+    confirm: Run every scenario now?
+    run: hooks/run-tests.sh
+```
+
+The one kind of surface that does something rather than drawing. The page shows
+what it printed afterwards, and what it wrote is committed — a button that runs
+something and then shows the same page unchanged is a button nobody presses
+twice.
+
 ## Reactions
 
 An app can also ask to be run when something happens, by declaring it in the

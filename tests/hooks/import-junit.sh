@@ -14,9 +14,10 @@ set -eu
 docket="${DOCKET_BIN:-docket}"
 root="${DOCKET_ROOT:-$(pwd)}"
 
-file=""; environment=""; revision=""; execution=""
+file=""; environment=""; revision=""; execution=""; commit=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --commit)      commit=1;        shift 1 ;;
     --environment) environment="$2"; shift 2 ;;
     --revision)    revision="$2";    shift 2 ;;
     --execution)   execution="$2";   shift 2 ;;
@@ -110,3 +111,16 @@ if missing:
 PY
 
 python3 "$script" "$file" "$docket" "$root" "$environment" "$revision" "$execution"
+
+# The simplest way results reach a board: commit them. CI has a clone, the
+# notes are files, and a push is the whole of the delivery — no endpoint, no
+# secret to rotate, and the audit trail is the commit. Use the inbox instead
+# only when CI must not have push rights.
+if [ -n "$commit" ]; then
+  cd "$root"
+  git add -A
+  git -c user.name="${DOCKET_AUTHOR_NAME:-CI}" \
+      -c user.email="${DOCKET_AUTHOR_EMAIL:-ci@example.com}" \
+      commit -q -m "Test results from ${environment}${revision:+ at $revision}" || true
+  echo "committed. push when you are ready."
+fi

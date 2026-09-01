@@ -1,5 +1,5 @@
 name: tests
-version: "3"
+version: "5"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -101,6 +101,16 @@ surfaces:
     - name: feature
       title: Feature file
       run: hooks/feature.sh
+  inbox:
+    - name: junit
+      run: hooks/receive-junit.sh
+      secret_env: DOCKET_JUNIT_SECRET
+  actions:
+    - name: run-tests
+      title: Run the scenarios
+      on: feature
+      confirm: Run every scenario now? Whatever the runner writes is committed.
+      run: hooks/run-tests.sh
   panels:
     - name: covered-by
       title: Tested by
