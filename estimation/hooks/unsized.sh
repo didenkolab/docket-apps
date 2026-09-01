@@ -10,7 +10,8 @@ printf 'Open work nobody has put a number on — the agenda for a planning sessi
     key = $2
     title = substr($0, index($0, $2) + length($2) + 1)
     gsub(/^"|"$/, "", title)
-    printf "- **%s** %s\n", key, title
+    # A key that is not a link is a key somebody has to copy and paste.
+    printf "- [**%s**](/task/%s) %s\n", key, key, title
     left++
   }
   END { if (!left) printf "Everything open has a number on it.\n" }'

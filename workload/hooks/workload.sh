@@ -9,14 +9,16 @@ printf '## Who is carrying what\n\n'
 printf '| Person | Open | Sized | Total |\n|---|---:|---:|---:|\n'
 "$docket" export --format csv --open --fields assignee,estimate "$DOCKET_ROOT" |
   awk -F',' 'NR > 1 {
-    who = ($1 == "" ? "(nobody)" : $1)
+    who = ($1 == "" ? "" : $1)
     tasks[who]++
     if ($2 != "") { points[who] += $2; sized[who]++ }
   }
   END {
-    for (who in tasks)
-      printf "%d\t| %s | %d | %d | %s |\n", tasks[who], who, tasks[who], sized[who] + 0,
+    for (who in tasks) {
+      shown = (who == "" ? "(nobody)" : "[" who "](/person/" who ")")
+      printf "%d\t| %s | %d | %d | %s |\n", tasks[who], shown, tasks[who], sized[who] + 0,
              (points[who] ? points[who] : "—")
+    }
   }' | sort -rn | cut -f2-
 
 printf '\nUnsized work is counted but not totalled: a total that quietly leaves\n'

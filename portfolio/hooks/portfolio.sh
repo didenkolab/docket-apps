@@ -12,7 +12,8 @@ printf '| Container | Done | Of | Left |\n|---|---:|---:|---:|\n'
   }
   END {
     for (p in under)
-      printf "| %s | %d | %d | %d |\n", p, closed[p] + 0, under[p], under[p] - closed[p]
+      printf "| [%s](/task/%s) | %d | %d | %d |\n", p, p, closed[p] + 0, under[p],
+             under[p] - closed[p]
   }' | sort
 
 printf '\nCounted by tasks rather than by estimate: a container is finished when\n'

@@ -31,6 +31,12 @@ server started with `--programs`. They ask **docket itself** for the data —
 `docket anomalies` — so the awkward reading stays in one tested place and an app
 is a few lines of formatting.
 
+## Writing your own
+
+Anyone can. An app is a git repository with an `docket-app.yaml` in it, and it
+is installed by pasting the URL — see [WRITING-AN-APP.md](WRITING-AN-APP.md).
+There is nothing to register with and nobody to ask.
+
 ## What a pack may not do
 
 - **No statuses and no workflow.** A column is what a team agreed to. An app
