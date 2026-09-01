@@ -1,5 +1,5 @@
 name: tests
-version: "2"
+version: "3"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -34,6 +34,14 @@ vocabulary:
       label: Automated
       kind: flag
       types: [test]
+    - name: automation_id
+      label: Automation id
+      kind: text
+      types: [test]
+      help: >
+        What the runner calls this test — "suite.ClassName.method". The results
+        importer matches on it, because a title is written for people and
+        changes when somebody improves the wording.
 
     # The execution: what was run, where, on what.
     - name: environment

@@ -81,6 +81,18 @@ vocabulary, and it is the part that is tested:
 | `docket anomalies --json` | what is odd about how the work is connected |
 | `docket graph` | clusters, hubs, islands |
 
+And one that writes:
+
+```
+docket set TEST-5 result=failed runs=TEST-3 evidence="gateway timeout"
+```
+
+Everything it sets is held to what the vault declared — a choice must be on the
+list, a relation must be a key that exists, a status move must be allowed by the
+workflow. That is the reason it exists: a script reaching for `sed` on
+frontmatter gets none of that, and breaks the file on the first title with a
+colon in it.
+
 Ask for columns **by name**. A task title may hold a comma, and counting
 columns from the left is exactly how an app comes to read the wrong one.
 
