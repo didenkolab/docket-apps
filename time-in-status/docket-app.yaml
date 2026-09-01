@@ -1,0 +1,12 @@
+name: time_in_status
+version: "1"
+description: How long work sits in each column, and what has waited longest
+
+# This app brings a program. It is run only by a server started with
+# --programs: a repository can declare one, and only whoever runs the server
+# can agree to execute it on their machine.
+surfaces:
+  pages:
+    - name: time-in-status
+      title: Time in status
+      run: hooks/time-in-status.sh
