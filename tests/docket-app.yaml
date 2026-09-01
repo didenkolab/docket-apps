@@ -1,5 +1,5 @@
 name: tests
-version: "7"
+version: "8"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -47,6 +47,15 @@ vocabulary:
         changes when somebody improves the wording.
 
     # The execution: what was run, where, on what.
+    - name: generated
+      label: Derived id
+      kind: flag
+      types: [test]
+      help: >
+        The automation never named this test, so its id was derived from the
+        feature file and the scenario name. Rename the scenario and it becomes
+        a different test — tag the scenario to settle it.
+
     - name: environment
       label: Environment
       kind: text
