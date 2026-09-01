@@ -1,0 +1,27 @@
+# The register: everything not yet closed, worst first is a judgement, so this
+# lists and leaves the judgement to whoever reads it.
+filters:
+  and:
+    - 'note.type == "risk"'
+    - 'note.status_category != "done"'
+properties:
+  note.key:
+    displayName: Key
+  note.title:
+    displayName: Risk
+  note.likelihood:
+    displayName: Likelihood
+  note.impact:
+    displayName: Impact
+  note.owner:
+    displayName: Owner
+  note.threatens:
+    displayName: Threatens
+views:
+  - type: table
+    name: Register
+    order:
+      - note.likelihood
+      - note.impact
+      - note.owner
+      - note.threatens

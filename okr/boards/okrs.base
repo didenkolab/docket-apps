@@ -1,0 +1,24 @@
+filters:
+  and:
+    - or:
+      - 'note.type == "objective"'
+      - 'note.type == "key_result"'
+properties:
+  note.key:
+    displayName: Key
+  note.title:
+    displayName: Title
+  note.quarter:
+    displayName: Quarter
+  note.current:
+    displayName: Now
+  note.target:
+    displayName: Target
+views:
+  - type: table
+    name: OKRs
+    order:
+      - note.quarter
+      - note.title
+      - note.current
+      - note.target

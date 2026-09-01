@@ -1,0 +1,27 @@
+name: intake
+version: "1"
+description: Requests from outside the team, kept apart from the work they become
+
+vocabulary:
+  types:
+    - name: request
+  fields:
+    - name: asked_by
+      label: Asked by
+      kind: text
+      types: [request]
+      required: true
+      help: Who wants it. A request with no name behind it cannot be asked a question.
+    - name: asked_on
+      label: Asked
+      kind: date
+      types: [request]
+      required: true
+    - name: wanted_by
+      label: Wanted by
+      kind: date
+      types: [request]
+      help: A date somebody actually said. Not a guess, and not "asap".
+  relations:
+    - name: became
+      inverse: came_from

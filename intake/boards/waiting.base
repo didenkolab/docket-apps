@@ -1,0 +1,25 @@
+filters:
+  and:
+    - 'note.type == "request"'
+    - 'note.status_category != "done"'
+properties:
+  note.key:
+    displayName: Key
+  note.title:
+    displayName: Request
+  note.asked_by:
+    displayName: Asked by
+  note.asked_on:
+    displayName: Asked
+  note.wanted_by:
+    displayName: Wanted by
+  note.became:
+    displayName: Became
+views:
+  - type: table
+    name: Waiting on us
+    order:
+      - note.asked_on
+      - note.asked_by
+      - note.title
+      - note.became

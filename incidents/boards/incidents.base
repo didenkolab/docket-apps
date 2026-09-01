@@ -1,0 +1,22 @@
+filters:
+  and:
+    - 'note.type == "incident"'
+properties:
+  note.key:
+    displayName: Key
+  note.title:
+    displayName: Incident
+  note.severity:
+    displayName: Severity
+  note.detected_at:
+    displayName: Detected
+  note.explained_by:
+    displayName: Postmortem
+views:
+  - type: table
+    name: Incidents
+    order:
+      - note.detected_at
+      - note.severity
+      - note.title
+      - note.explained_by

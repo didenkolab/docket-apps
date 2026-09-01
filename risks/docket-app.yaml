@@ -1,0 +1,34 @@
+name: risks
+version: "1"
+description: A risk register — likelihood, impact, and what each risk threatens
+
+vocabulary:
+  types:
+    - name: risk
+  fields:
+    - name: likelihood
+      label: Likelihood
+      kind: choice
+      choices: [rare, unlikely, possible, likely, almost_certain]
+      types: [risk]
+      required: true
+    - name: impact
+      label: Impact
+      kind: choice
+      choices: [negligible, minor, moderate, major, severe]
+      types: [risk]
+      required: true
+    - name: owner
+      label: Owner
+      kind: text
+      types: [risk]
+      help: Who is watching this one. A risk nobody owns is a risk nobody sees.
+    - name: reviewed_on
+      label: Reviewed
+      kind: date
+      types: [risk]
+  relations:
+    - name: threatens
+      inverse: threatened_by
+    - name: mitigated_by
+      inverse: mitigates

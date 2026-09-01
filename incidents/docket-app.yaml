@@ -1,0 +1,33 @@
+name: incidents
+version: "1"
+description: Incidents, how bad they were, and the postmortem that has to follow
+
+vocabulary:
+  types:
+    - name: incident
+    - name: postmortem
+  fields:
+    - name: severity
+      label: Severity
+      kind: choice
+      choices: [sev1, sev2, sev3]
+      types: [incident]
+      required: true
+      help: sev1 is money or data moving wrongly. sev3 is somebody inconvenienced.
+    - name: detected_at
+      label: Detected
+      kind: datetime
+      types: [incident]
+      required: true
+    - name: resolved_at
+      label: Resolved
+      kind: datetime
+      types: [incident]
+    - name: customers_affected
+      label: Customers affected
+      kind: text
+      types: [incident]
+      help: A number, or how it was bounded. "Unknown" is an answer, and a finding.
+  relations:
+    - name: explains
+      inverse: explained_by

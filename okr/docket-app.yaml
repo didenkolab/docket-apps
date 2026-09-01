@@ -1,0 +1,34 @@
+name: okr
+version: "1"
+description: Objectives and key results, and the work that contributes to them
+
+vocabulary:
+  types:
+    - name: objective
+      level: 2
+    - name: key_result
+      level: 1
+  fields:
+    - name: target
+      label: Target
+      kind: number
+      types: [key_result]
+      required: true
+      help: The number that means done. "Ninety per cent" is 90.
+    - name: current
+      label: Current
+      kind: number
+      types: [key_result]
+    - name: measure
+      label: Measured by
+      kind: text
+      types: [key_result]
+      required: true
+      help: Where the number comes from. A key result nobody can measure is a wish.
+    - name: quarter
+      label: Quarter
+      kind: text
+      types: [objective, key_result]
+  relations:
+    - name: contributes_to
+      inverse: advanced_by

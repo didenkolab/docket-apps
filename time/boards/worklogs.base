@@ -1,0 +1,23 @@
+# Every entry, newest first. Sum the Hours column in Obsidian to total it.
+filters:
+  and:
+    - 'note.type == "worklog"'
+properties:
+  note.key:
+    displayName: Key
+  note.worked_on:
+    displayName: Date
+  note.assignee:
+    displayName: Who
+  note.spent:
+    displayName: Hours
+  note.logs:
+    displayName: On
+views:
+  - type: table
+    name: Worklogs
+    order:
+      - note.worked_on
+      - note.assignee
+      - note.spent
+      - note.logs

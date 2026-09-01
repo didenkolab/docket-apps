@@ -1,0 +1,33 @@
+name: time
+version: "1"
+description: Time logged against work — as notes, so it can be read, reviewed and disputed
+
+# A worklog is a task, not a number on one.
+#
+# The number-on-a-task shape loses the two things anybody actually asks: who,
+# and when. Eleven of the marketplace's top hundred are time tracking, and every
+# one of them keeps entries, because "14h" on a card cannot be invoiced,
+# corrected or argued with.
+vocabulary:
+  types:
+    - name: worklog
+      level: -1
+  fields:
+    - name: spent
+      label: Hours
+      kind: number
+      types: [worklog]
+      required: true
+      help: Hours, as a number. Half an hour is 0.5.
+    - name: worked_on
+      label: Date
+      kind: date
+      types: [worklog]
+      required: true
+    - name: billable
+      label: Billable
+      kind: flag
+      types: [worklog]
+  relations:
+    - name: logs
+      inverse: logged
