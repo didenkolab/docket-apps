@@ -38,3 +38,18 @@ vocabulary:
       inverse: tested_by
     - name: verifies
       inverse: verified_by
+
+# What a test-management product actually sells is not the vocabulary — it is
+# the coverage report. These draw it.
+surfaces:
+  pages:
+    - name: coverage
+      title: Test coverage
+      run: hooks/coverage.sh
+    - name: feature
+      title: Feature file
+      run: hooks/feature.sh
+  panels:
+    - name: covered-by
+      title: Tested by
+      run: hooks/covered-by.sh
