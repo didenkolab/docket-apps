@@ -1,5 +1,5 @@
 name: tests
-version: "6"
+version: "7"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -16,9 +16,12 @@ vocabulary:
       level: 1
     - name: test_execution
       level: 1
+      board: false
     - name: test
+      board: false
     - name: test_run
       level: -1
+      board: false
   fields:
     # The test: what should happen.
     - name: steps
@@ -37,7 +40,7 @@ vocabulary:
     - name: automation_id
       label: Automation id
       kind: text
-      types: [test]
+      types: [test, test_run]
       help: >
         What the runner calls this test — "suite.ClassName.method". The results
         importer matches on it, because a title is written for people and

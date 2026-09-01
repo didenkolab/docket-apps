@@ -4,8 +4,16 @@ Cucumber's JSON rather than its JUnit, and the reason is the identity: JUnit
 carries a class name and a scenario name and no tags, so the case id — the one
 stable thing about a scenario — is not in it. Matching on the name instead would
 attach a run to the wrong test the first time somebody rewords one.
+
+A scenario the automation never tagged is identified the way import-features
+identified it — derived from the feature file and the scenario name, by the same
+function — so a result lands on the test even when nobody wrote an id. Both
+sides derive it; neither invents it.
 """
 import json, os, re, subprocess, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import caseid
 
 docket = os.environ.get("DOCKET_BIN", "docket")
 root = os.environ.get("DOCKET_ROOT", ".")
@@ -13,8 +21,7 @@ report = sys.argv[1]
 environment = sys.argv[2] if len(sys.argv) > 2 else "unsaid"
 revision = sys.argv[3] if len(sys.argv) > 3 else ""
 project = sys.argv[4] if len(sys.argv) > 4 else ""
-
-CASE_ID = re.compile(r"^@(SP|ACME)-[A-Z]+-\d+$")
+prefix = (sys.argv[5] if len(sys.argv) > 5 else "") or project or "ACME"
 
 def run(*args):
     out = subprocess.run([docket, *args], capture_output=True, text=True, cwd=root)
@@ -26,13 +33,19 @@ by_id = {}
 for t in json.loads(run("export", "--format", "json")):
     ident = (t.get("fields") or {}).get("automation_id", "").strip()
     if ident and t.get("type") == "test":
-        by_id[ident] = t["key"]
+        by_id[ident] = (t["key"], t.get("title", ""))
 
-outcome = {}   # case id -> (result, why)
-unknown = []
+outcome = {}   # case id -> (result, one line, the whole message)
+names = {}     # case id -> what the scenario is called
+derived = set()
 for feature in json.load(open(report, encoding="utf-8")):
+    uri = feature.get("uri") or feature.get("name") or ""
     for e in feature.get("elements", []):
-        ident = next((t["name"][1:] for t in e.get("tags", []) if CASE_ID.match(t["name"])), "")
+        if e.get("type") == "background":
+            continue
+        ident, told = caseid.identity(caseid.tags_of(e), uri, e.get("name", ""), prefix)
+        if not told:
+            derived.add(ident)
         steps = [s.get("result", {}) for s in e.get("steps", []) if "result" in s]
         if not steps:
             continue
@@ -48,10 +61,19 @@ for feature in json.load(open(report, encoding="utf-8")):
             continue
         else:
             result = ("aborted", "")
-        if not ident:
-            unknown.append(e.get("name", "")[:70])
+        # A Scenario Outline is one test and several rows in the report. The
+        # test failed if any row did — reporting the last row's result would
+        # make a suite green because its final example happened to pass.
+        if outcome.get(ident, ("", "", ""))[0] == "failed":
             continue
-        outcome[ident] = result
+        # The whole message, not the summary line: the summary is what a table
+        # can hold, and the stack is what somebody fixing it reads. Both, in
+        # different places, so neither has to be looked up elsewhere.
+        whole = ""
+        if result[0] == "failed":
+            whole = (broke.get("error_message") or "").strip()
+        outcome[ident] = (result[0], result[1], whole)
+        names[ident] = e.get("name", "")
 
 if not outcome:
     sys.exit("nothing in that report has a result: a dry run reports every step skipped")
@@ -68,13 +90,40 @@ execution = run("new", title, "--type", "test_execution",
 run("set", execution, "environment=" + environment,
     *(["revision=" + revision] if revision else []), "--quiet")
 
-for ident, (result, why) in sorted(matched.items()):
-    key = run("new", ident, "--type", "test_run", "--parent", execution,
-              *(["--project", project] if project else [])).split()[0]
-    args = [key, "result=" + result, "runs=" + by_id[ident]]
+for ident, (result, why, whole) in sorted(matched.items()):
+    test, test_title = by_id[ident]
+    # Named after the scenario, not after the case id. A page of seven hundred
+    # runs called ACME-RPT-005 is a page nobody can read; the id is a field, and
+    # it is a field precisely so that the title can be language.
+    made = run("new", (names.get(ident) or test_title or ident)[:120],
+               "--type", "test_run", "--parent", execution,
+               *(["--project", project] if project else []))
+    key, at = made.split(None, 1)
+    args = [key, "result=" + result, "runs=" + test, "automation_id=" + ident]
     if why:
         args.append("evidence=" + why)
     run("set", *args, "--quiet")
+
+    # What happened, in place of the template's instructions on how to write it.
+    # Those are for a person filling one in by hand; on a machine-written run
+    # they are seven hundred copies of a note to somebody who will never read it.
+    said = ["## What happened", ""]
+    if result == "failed":
+        said += ["**Failed** on " + environment +
+                 (" at `" + revision + "`" if revision else "") + ".", ""]
+        said += ["```", (whole or why)[:1500], "```", ""]
+    elif result == "passed":
+        said += ["**Passed** on " + environment +
+                 (" at `" + revision + "`" if revision else "") + ".", ""]
+    else:
+        said += ["**" + result.title() + "** on " + environment + ".", ""]
+    said += ["Case `" + ident + "`, from the Cucumber report — "
+             "nothing here was typed by hand."]
+    body = open(os.path.join(root, at.strip()), encoding="utf-8").read()
+    head = body.split("---", 2)
+    if len(head) >= 3:
+        body = "---" + head[1] + "---\n\n" + "\n".join(said) + "\n"
+        open(os.path.join(root, at.strip()), "w", encoding="utf-8").write(body)
 
 print(f"{execution}: {len(matched)} runs written.")
 for result in ("passed", "failed", "aborted"):
@@ -84,5 +133,7 @@ for result in ("passed", "failed", "aborted"):
 if missing:
     print(f"\n{len(missing)} case ids ran and are not in the vault: " + ", ".join(missing[:8]))
     print("Run import-features again — the automation has grown since.")
-if unknown:
-    print(f"\n{len(unknown)} scenarios ran carrying no case id, so nothing could hold their result.")
+ran_derived = sorted(i for i in matched if i in derived)
+if ran_derived:
+    print(f"\n{len(ran_derived)} of those carry no case id in the automation; "
+          "their identity was derived from the feature and the scenario name.")
