@@ -9,6 +9,17 @@ trap 'rm -f "$runs" "$heads"' EXIT
 "$docket" export --format csv --fields key,type,environment,revision,title "$DOCKET_ROOT" > "$heads"
 
 printf '## Executions\n\n'
+
+# The picture first, because the shape of the last dozen runs is the thing
+# anybody looks at before reading a table. It is a file in the vault, so it is
+# committed, diffed, and there in Obsidian too.
+python3 hooks/charts.py attachments/test-results.svg >/dev/null 2>&1 || true
+if [ -f attachments/test-results.svg ]; then
+  # DOCKET_PREFIX is where this vault sits in the space — empty for a repository
+  # opened on its own, "acme/" inside a workspace. Given rather than guessed.
+  printf '![Results of the last executions](/file/%sattachments/test-results.svg)\n\n' "${DOCKET_PREFIX:-}"
+fi
+
 awk -F',' '
   NR == FNR {
     if (FNR == 1 || $1 != "test_run") next

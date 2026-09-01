@@ -1,5 +1,5 @@
 name: tests
-version: "5"
+version: "6"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -112,6 +112,9 @@ surfaces:
       confirm: Run every scenario now? Whatever the runner writes is committed.
       run: hooks/run-tests.sh
   panels:
+    - name: runs-here
+      title: Runs in this execution
+      run: hooks/runs-here.sh
     - name: covered-by
       title: Tested by
       run: hooks/covered-by.sh
