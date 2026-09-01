@@ -1,21 +1,31 @@
-# What this app is, and what a vault takes on by installing it.
 name: tests
-version: "1"
-description: Test management — a test is work, and what it covers is a link
+version: "2"
+description: Test management — plans, sets, tests, and the executions that record what happened
 
-# Everything below lands in docket.yaml. Nothing here is executed.
+# The model is Xray's, because Xray's is right about one thing: a run is not a
+# field on a test. A test says what should happen; an execution says what did,
+# on which build, in which environment, and a run is the meeting of the two.
+# Kept as separate notes rather than as a status on the test, because a test
+# that only carries its last result cannot answer "did this ever pass on
+# staging", which is the question a release actually asks.
 vocabulary:
   types:
     - name: test_plan
+      level: 2
+    - name: test_set
+      level: 1
+    - name: test_execution
       level: 1
     - name: test
     - name: test_run
+      level: -1
   fields:
+    # The test: what should happen.
     - name: steps
       label: Steps
       kind: text
       types: [test]
-      help: What to do, one line each. The expected result is the last line.
+      help: Or a gherkin block in the body, which the feature file collects.
     - name: preconditions
       label: Preconditions
       kind: text
@@ -24,28 +34,62 @@ vocabulary:
       label: Automated
       kind: flag
       types: [test]
+
+    # The execution: what was run, where, on what.
+    - name: environment
+      label: Environment
+      kind: text
+      types: [test_execution]
+      required: true
+      help: staging, production, a device — where these runs happened.
+    - name: revision
+      label: Revision
+      kind: text
+      types: [test_execution]
+      help: The build or commit. Without it a result is about no particular software.
+    - name: started
+      label: Started
+      kind: datetime
+      types: [test_execution]
+    - name: finished
+      label: Finished
+      kind: datetime
+      types: [test_execution]
+
+    # The run: what happened to one test in one execution.
     - name: result
       label: Result
       kind: choice
-      choices: [passed, failed, blocked, skipped]
+      choices: [todo, executing, passed, failed, aborted]
       types: [test_run]
+      required: true
     - name: ran_at
       label: Ran at
       kind: datetime
       types: [test_run]
+    - name: evidence
+      label: Evidence
+      kind: text
+      types: [test_run]
+      help: A link to the log, the screenshot, the recording.
   relations:
-    - name: tests
+    - name: tests           # a test covers work
       inverse: tested_by
-    - name: verifies
-      inverse: verified_by
+    - name: runs            # a run is of a test
+      inverse: run_by
+    - name: found           # a run found a defect
+      inverse: found_in
+    - name: includes        # a set or a plan holds tests
+      inverse: included_in
 
-# What a test-management product actually sells is not the vocabulary — it is
-# the coverage report. These draw it.
 surfaces:
   pages:
     - name: coverage
       title: Test coverage
       run: hooks/coverage.sh
+    - name: executions
+      title: Executions
+      run: hooks/executions.sh
     - name: feature
       title: Feature file
       run: hooks/feature.sh
@@ -53,3 +97,6 @@ surfaces:
     - name: covered-by
       title: Tested by
       run: hooks/covered-by.sh
+    - name: last-runs
+      title: Last runs
+      run: hooks/last-runs.sh
