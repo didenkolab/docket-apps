@@ -1,0 +1,11 @@
+name: anomalies
+version: "1"
+description: What is odd about how the work is connected — from the graph, not the board
+
+# Nothing in the Atlassian marketplace does this: in Jira the links between
+# issues are rows in a table, and nobody looks at their shape.
+surfaces:
+  pages:
+    - name: anomalies
+      title: Anomalies
+      run: hooks/anomalies.sh
