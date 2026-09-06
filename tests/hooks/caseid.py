@@ -91,6 +91,20 @@ def identity(tags, feature_file, scenario_name, prefix):
     return derived(feature_file, scenario_name, prefix), False
 
 
+def feature_file(feature):
+    """The feature file a report entry came from, whichever runner wrote it.
+
+    Cucumber writes it as `uri`; behave writes `location` as "path.feature:1"
+    and no uri. The file's name is what an untagged scenario's id is derived
+    from on both sides — the import of the features and the import of the
+    results — so reading the wrong field here gives every untagged run an id
+    no test has, and the run lands nowhere.
+    """
+    return (feature.get("uri")
+            or str(feature.get("location") or "").rsplit(":", 1)[0]
+            or feature.get("name") or "")
+
+
 def project_key(root, said=""):
     """The project a derived id is prefixed with.
 
