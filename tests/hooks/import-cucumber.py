@@ -39,7 +39,14 @@ outcome = {}   # case id -> (result, one line, the whole message)
 names = {}     # case id -> what the scenario is called
 derived = set()
 for feature in json.load(open(report, encoding="utf-8")):
-    uri = feature.get("uri") or feature.get("name") or ""
+    # Cucumber writes the feature file as `uri`; behave writes `location` as
+    # "path/to/x.feature:1". Either way the identity of an untagged scenario is
+    # derived from the file's name, the same way import-features derived it —
+    # deriving it from the feature's title instead would give the results a
+    # different id from the tests, and every untagged run would land nowhere.
+    uri = (feature.get("uri")
+           or str(feature.get("location") or "").rsplit(":", 1)[0]
+           or feature.get("name") or "")
     for e in feature.get("elements", []):
         if e.get("type") == "background":
             continue
