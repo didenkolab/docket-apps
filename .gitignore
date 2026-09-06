@@ -4,3 +4,6 @@
 
 # macOS
 .DS_Store
+# Python bytecode is a build product, not a hook.
+__pycache__/
+*.pyc

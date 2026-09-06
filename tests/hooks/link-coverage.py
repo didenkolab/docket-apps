@@ -42,6 +42,7 @@ repo = next((a.split("=", 1)[1] for a in rest if a.startswith("--repo=")), where
 project = next((a.split("=", 1)[1] for a in rest if a.startswith("--project=")), "")
 most = int(next((a.split("=", 1)[1] for a in rest if a.startswith("--limit=")), "5"))
 dry = "--dry-run" in rest
+prefix = caseid.project_key(root, project)
 
 KEY = re.compile(r"\b([A-Z][A-Z0-9]+-\d{1,6})\b")
 
@@ -136,7 +137,7 @@ for base, _, files in os.walk(where):
         for s in found:
             ids = caseid.all_written(s["tags"])
             if not ids:
-                ids = [caseid.derived(name, s["name"], project or "ACME")]
+                ids = [caseid.derived(name, s["name"], prefix)]
 
             from_history, from_text = [], []
             for number in range(s["from"], s["to"] + 1):

@@ -2,6 +2,7 @@
 # Bring a Cucumber project's scenarios in as tests.
 #
 #   hooks/import-features.sh ../acme-aqa/features [@smoke] [--project=ACME] [--dry-run]
+#                            [--ignore-tags=a,b] [--write-tags]
 #
 # The project matters: an execution and its runs belong to one project, and a
 # board with ten of them has ten sets of tests. One automation repository is

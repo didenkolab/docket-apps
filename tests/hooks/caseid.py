@@ -24,10 +24,13 @@ goal.
 import hashlib
 import os
 import re
+import sys
 
 # A case id somebody wrote. Deliberately strict — a suite has tags like @smoke
 # and @wip, and a loose pattern would promote one of those to an identity.
-WRITTEN = re.compile(r"^@?(SP|ACME)-[A-Z]+-\d+$")
+# The shape is PREFIX-AREA-NNN, and the prefix is whatever the suite uses.
+# A task key — ACME-940 — does not match: its second part is a number.
+WRITTEN = re.compile(r"^@?[A-Z][A-Z0-9]*-[A-Z]+-\d+$")
 
 # One this file derived. A distinct shape on purpose: reading a board, you can
 # see at a glance which tests the automation names and which the tool guessed.
@@ -61,7 +64,7 @@ def all_written(tags):
     return out
 
 
-def derived(feature_file, scenario_name, prefix="ACME"):
+def derived(feature_file, scenario_name, prefix):
     """A stable id for a scenario nobody tagged.
 
     feature_file may be a path or a bare name; only its base name counts, so the
@@ -76,7 +79,7 @@ def derived(feature_file, scenario_name, prefix="ACME"):
     return "%s-GEN-%s" % (prefix.upper(), digest)
 
 
-def identity(tags, feature_file, scenario_name, prefix="ACME"):
+def identity(tags, feature_file, scenario_name, prefix):
     """What to call this scenario, and whether anybody said so.
 
     Returns (id, told): told is False when the id was derived here, which is
@@ -86,6 +89,34 @@ def identity(tags, feature_file, scenario_name, prefix="ACME"):
     if said:
         return said, True
     return derived(feature_file, scenario_name, prefix), False
+
+
+def project_key(root, said=""):
+    """The project a derived id is prefixed with.
+
+    What the caller said wins. Otherwise the vault says: a vault with one
+    project has one answer, and a vault with several is asked to name one
+    rather than have one guessed for it — a guess here is an id on every
+    untagged scenario, and it has to agree with the guess the results make.
+    """
+    if said:
+        return said
+    keys = []
+    try:
+        inside = False
+        for line in open(os.path.join(root, "docket.yaml"), encoding="utf-8"):
+            if not line.startswith((" ", "\t", "-")) and line.strip():
+                inside = line.startswith("projects:")
+                continue
+            if inside:
+                m = re.match(r"^\s*-?\s*key:\s*([A-Z][A-Z0-9]*)\s*$", line)
+                if m:
+                    keys.append(m.group(1))
+    except OSError:
+        pass
+    if len(keys) == 1:
+        return keys[0]
+    sys.exit("this vault holds %d projects; say --project=KEY" % len(keys))
 
 
 def tags_of(element):

@@ -36,7 +36,13 @@ where = sys.argv[1]
 rest = sys.argv[2:]
 wanted_tag = next((a for a in rest if a.startswith("@")), "")
 project = next((a.split("=", 1)[1] for a in rest if a.startswith("--project=")), "")
-prefix = next((a.split("=", 1)[1] for a in rest if a.startswith("--prefix=")), project or "ACME")
+prefix = next((a.split("=", 1)[1] for a in rest if a.startswith("--prefix=")), "") \
+    or caseid.project_key(root, project)
+# Tags that are not worth carrying: --ignore-tags=a,b, and the project itself,
+# which some suites put on every scenario and which a board already knows.
+ignore = {t for a in rest if a.startswith("--ignore-tags=")
+          for t in a.split("=", 1)[1].split(",") if t}
+ignore.add(prefix.lower())
 dry = "--dry-run" in rest
 write_tags = "--write-tags" in rest
 
@@ -176,7 +182,7 @@ for ident in order:
     for s in covered:
         for tag in s["tags"]:
             bare = tag.lstrip("@")
-            if not caseid.WRITTEN.match(tag) and bare != "acme" and bare not in tags:
+            if not caseid.WRITTEN.match(tag) and bare not in ignore and bare not in tags:
                 tags.append(bare)
     if tags:
         args.append("tags=" + ",".join(tags[:6]))
