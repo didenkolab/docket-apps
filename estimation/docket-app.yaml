@@ -1,5 +1,5 @@
 name: estimation
-version: "1"
+version: "2"
 description: What has not been sized, so a planning session has an agenda
 surfaces:
   pages:

@@ -1,5 +1,5 @@
 name: portfolio
-version: "1"
+version: "2"
 description: The hierarchy with its roll-ups — what the portfolio apps draw
 surfaces:
   pages:
