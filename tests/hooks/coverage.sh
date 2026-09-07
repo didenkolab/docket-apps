@@ -17,7 +17,11 @@ awk -F',' '
   # into the second block and be counted as work.
   NR == FNR {
     if (FNR == 1) next
-    if ($1 != "test" && $1 != "test_run") next
+    # Only a test declares coverage: `tests:` on a test points at the work.
+    # A run carries `runs:` and no coverage at all, and counting one as a test
+    # reported every run in the vault as "a test covering nothing" — 265 of
+    # them in a showcase with 60 tests.
+    if ($1 != "test") next
     split($2, keys, " ")
     for (i in keys) if (keys[i] != "") covered[keys[i]] = 1
     tests++
@@ -27,7 +31,15 @@ awk -F',' '
   FNR == 1 { next }
   {
     type = $2
-    if (type == "test" || type == "test_run" || type == "test_plan") next
+    # Nothing the tests app writes is work waiting to be covered, and each is
+    # skipped for its own reason:
+    #   test           is the coverage — it is what covers, not what is covered
+    #   test_run       is one result of one test, written per scenario per run
+    #   test_plan      names the areas to cover; it holds sets, not requirements
+    #   test_set       is a grouping of tests, not work somebody asked for
+    #   test_execution is one pass of the suite on one build, not a deliverable
+    if (type == "test" || type == "test_run" || type == "test_plan" ||
+        type == "test_set" || type == "test_execution") next
     if ($3 == "done") next
     open++
     if ($1 in covered) { has++; next }
@@ -39,7 +51,7 @@ awk -F',' '
     printf "| | Tasks |\n|---|---:|\n"
     printf "| Open work with a test | %d |\n", has + 0
     printf "| Open work with none | %d |\n", open - has
-    printf "| Tests and runs | %d |\n", tests + 0
+    printf "| Tests | %d |\n", tests + 0
     if (loose) printf "| Tests covering nothing | %d |\n", loose
     printf "\n"
     if (open == 0) printf "No open work to cover.\n"

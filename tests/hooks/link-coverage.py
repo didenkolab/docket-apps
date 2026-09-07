@@ -110,6 +110,21 @@ def blamed(path):
     return out
 
 
+# Nothing in the vault writes an inverse by itself — the format says so — so
+# both sides are written here. A test that says `tests:` and a requirement that
+# does not say `tested_by:` are two tasks disagreeing about their own
+# relationship, which is what `docket anomalies` reports, once per link. One
+# fourteen-scenario suite is enough to bury the findings worth reading.
+tested_by = {}   # work key -> the tests that cover it, as it will be written
+
+
+def also_tested_by(key, test_key):
+    have = tested_by.setdefault(
+        key, list((work[key].get("relations") or {}).get("tested_by", [])))
+    if test_key not in have:
+        have.append(test_key)
+
+
 def write(test, keys, why, fresh):
     with open(os.path.join(root, test["path"]), "a", encoding="utf-8") as f:
         f.write("\n## What this covers\n\n")
@@ -181,7 +196,27 @@ for base, _, files in os.walk(where):
                 run("set", test["key"], "tests=" + ",".join(already + fresh), "--quiet")
                 test.setdefault("relations", {})["tests"] = already + fresh
                 write(test, keys, why, fresh)
+                # Every key, not only the new ones: a link written before this
+                # hook wrote both sides is one this run can still settle.
+                for covered in keys:
+                    also_tested_by(covered, test["key"])
+
+# One `docket set` per work item rather than one per link: a suite covering two
+# hundred stories is two hundred processes either way, and four hundred if the
+# links are written one at a time. `docket set` replaces a list, so what is
+# written is what the export said plus what this run found.
+both = 0
+for key in sorted(tested_by):
+    had = list((work[key].get("relations") or {}).get("tested_by", []))
+    if tested_by[key] == had:
+        continue
+    both += 1
+    if not dry:
+        run("set", key, "tested_by=" + ",".join(tested_by[key]), "--quiet")
 
 print(f"{touched} tests now point at work, with {linked} links between them.")
+if both:
+    print(f"{both} of those tasks now say `tested_by` back — both sides, because "
+          "nothing writes the inverse by itself and one side alone is an anomaly.")
 if dry:
     print("Nothing was written: --dry-run.")

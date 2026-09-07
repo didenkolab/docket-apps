@@ -13,6 +13,7 @@ sides derive it; neither invents it.
 import json, os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import body
 import caseid
 
 docket = os.environ.get("DOCKET_BIN", "docket")
@@ -29,11 +30,29 @@ def run(*args):
         sys.exit((out.stderr or out.stdout).strip())
     return out.stdout.strip()
 
-by_id = {}
+by_id, carried = {}, {}
 for t in json.loads(run("export", "--format", "json")):
+    carried[t["key"]] = t.get("relations") or {}
     ident = (t.get("fields") or {}).get("automation_id", "").strip()
     if ident and t.get("type") == "test":
         by_id[ident] = (t["key"], t.get("title", ""))
+
+# The other end of everything this writes. Nothing in the vault writes an
+# inverse by itself, so a run that says `runs:` and a test that does not say
+# `run_by:` are two tasks disagreeing about their own relationship — and that
+# is a finding on `docket anomalies`, once per run. Twenty-three of them come
+# out of a single fourteen-scenario execution, and at a suite's real size they
+# bury the one relation somebody left one-sided on purpose.
+INVERSE = {"runs": "run_by", "found": "found_in"}
+
+inverse = {}   # target key -> verb -> the keys it will carry
+
+
+def also_says(target, verb, key):
+    have = inverse.setdefault(target, {}).setdefault(
+        verb, list(carried.get(target, {}).get(verb, [])))
+    if key not in have:
+        have.append(key)
 
 outcome = {}   # case id -> (result, one line, the whole message)
 names = {}     # case id -> what the scenario is called
@@ -109,10 +128,18 @@ for ident, (result, why, whole) in sorted(matched.items()):
                "--type", "test_run", "--parent", execution,
                *(["--project", project] if project else []))
     key, at = made.split(None, 1)
-    args = [key, "result=" + result, "runs=" + test, "automation_id=" + ident]
+    # What this run points at, as a table, so that the inverse cannot be
+    # forgotten for one verb and remembered for another: a run says `runs:` on
+    # the test now, and `found:` on the defect the day somebody teaches this to
+    # read one out of the report.
+    points_at = {"runs": test}
+    args = [key, "result=" + result, "automation_id=" + ident]
+    args += [verb + "=" + whom for verb, whom in sorted(points_at.items())]
     if why:
         args.append("evidence=" + why)
     run("set", *args, "--quiet")
+    for verb, whom in points_at.items():
+        also_says(whom, INVERSE[verb], key)
 
     # What happened, in place of the template's instructions on how to write it.
     # Those are for a person filling one in by hand; on a machine-written run
@@ -129,17 +156,30 @@ for ident, (result, why, whole) in sorted(matched.items()):
         said += ["**" + result.title() + "** on " + environment + ".", ""]
     said += ["Case `" + ident + "`, from the Cucumber report — "
              "nothing here was typed by hand."]
-    body = open(os.path.join(root, at.strip()), encoding="utf-8").read()
-    head = body.split("---", 2)
-    if len(head) >= 3:
-        body = "---" + head[1] + "---\n\n" + "\n".join(said) + "\n"
-        open(os.path.join(root, at.strip()), "w", encoding="utf-8").write(body)
+    body.replace(os.path.join(root, at.strip()), said)
+
+# One `docket set` per target rather than one per link: a fourteen-scenario
+# execution is fourteen more processes either way, and `docket set` replaces a
+# list, so what goes back is what the export said plus what this run added.
+both = 0
+for target in sorted(inverse):
+    was = carried.get(target, {})
+    pairs = [(verb, keys) for verb, keys in sorted(inverse[target].items())
+             if keys != list(was.get(verb, []))]
+    if not pairs:
+        continue
+    both += 1
+    run("set", target, *[verb + "=" + ",".join(keys) for verb, keys in pairs],
+        "--quiet")
 
 print(f"{execution}: {len(matched)} runs written.")
 for result in ("passed", "failed", "aborted"):
     n = sum(1 for r, _, _ in matched.values() if r == result)
     if n:
         print(f"  {result}: {n}")
+if both:
+    print(f"  both sides written: {both} tasks now say it back — nothing writes "
+          "an inverse by itself, and one side alone is an anomaly.")
 if missing:
     print(f"\n{len(missing)} case ids ran and are not in the vault: " + ", ".join(missing[:8]))
     print("Run import-features again — the automation has grown since.")

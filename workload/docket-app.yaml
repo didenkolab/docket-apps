@@ -1,5 +1,5 @@
 name: workload
-version: "1"
+version: "2"
 description: Who is carrying what, and how much of it — the report a capacity app sells
 surfaces:
   pages:

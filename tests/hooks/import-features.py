@@ -28,6 +28,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import body
 import caseid
 
 docket = os.environ.get("DOCKET_BIN", "docket")
@@ -150,28 +151,30 @@ for ident in order:
                     *(["--project", project] if project else []))
     key, at = made_line.split(None, 1)
 
-    body = []
+    said = []
     for s in covered:
         if len(covered) > 1:
-            body += ["## " + s["name"], ""]
+            said += ["## " + s["name"], ""]
         else:
-            body += ["## Scenario", ""]
-        body += ["```gherkin"] + ["  " + step for step in s["steps"]] + ["```", ""]
-        body += ["From `" + s["feature"] + "` in `" + s["file"] + "`.", ""]
+            said += ["## Scenario", ""]
+        said += ["```gherkin"] + ["  " + step for step in s["steps"]] + ["```", ""]
+        said += ["From `" + s["feature"] + "` in `" + s["file"] + "`.", ""]
     if len(covered) > 1:
-        body += ["This case is settled by " + str(len(covered)) + " scenarios. "
+        said += ["This case is settled by " + str(len(covered)) + " scenarios. "
                  "A case is a thing that must be true; a scenario is one way of "
                  "making it true, and a result from any of them is a result for "
                  "this case.", ""]
     if told:
-        body += ["Identity is the case id, not this title: a title gets improved."]
+        said += ["Identity is the case id, not this title: a title gets improved."]
     else:
-        body += ["**No case id in the automation**, so this one was derived from the "
+        said += ["**No case id in the automation**, so this one was derived from the "
                  "feature file and the scenario name. Rename the scenario and it "
                  "becomes a different test; tag the scenario `@" + ident + "` to "
                  "settle it."]
-    with open(os.path.join(root, at.strip()), "a", encoding="utf-8") as f:
-        f.write("\n" + "\n".join(body) + "\n")
+    # In place of the template's instructions, not after them: those are for
+    # a person filling a test in by hand, and every one of these tests
+    # otherwise opened with the template's worked example about a merchant.
+    body.replace(os.path.join(root, at.strip()), said)
 
     # One call, not three: seven hundred cases is seven hundred processes per
     # property otherwise.
