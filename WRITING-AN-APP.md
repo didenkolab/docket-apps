@@ -97,7 +97,7 @@ Ask for columns **by name**. A task title may hold a comma, and counting
 columns from the left is exactly how an app comes to read the wrong one.
 
 Markdown, not HTML: a program that could return HTML could put anything on a
-page people trust. Links work — `[IGL-12](/task/IGL-12)` and `[[wikilinks]]`
+page people trust. Links work — `[DKT-12](/task/DKT-12)` and `[[wikilinks]]`
 both resolve. A key that is not a link is a key somebody has to copy out.
 
 ## What an app may not do
