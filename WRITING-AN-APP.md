@@ -6,7 +6,7 @@ publish: somebody installs yours by pasting its URL.
 
 ```
 docket app add https://git.example.com/you/your-app.git
-docket app add https://github.com/vadymdidenkolab/docket-apps.git#risks   # one of many
+docket app add https://github.com/didenkolab/docket-apps.git#risks   # one of many
 ```
 
 ## The manifest

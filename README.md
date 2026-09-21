@@ -1,6 +1,6 @@
 # docket apps
 
-A library of packs for a [docket](https://github.com/vadymdidenkolab/docket) vault: vocabulary
+A library of packs for a [docket](https://github.com/didenkolab/docket) vault: vocabulary
 and files a vault takes on, arriving as a diff you read before you commit it.
 
 Each folder here is one app — a manifest, and the files it brings. Twelve of them cover most of
@@ -13,7 +13,7 @@ nobody to ask.
 From inside a vault:
 
 ```bash
-docket app add https://github.com/vadymdidenkolab/docket-apps.git#tests
+docket app add https://github.com/didenkolab/docket-apps.git#tests
 git status                                    # everything it wrote, unstaged
 docket check
 git add -A && git commit -m "Installed the app tests"
@@ -27,7 +27,7 @@ diff, then keep it or throw it away with `git checkout`.
 
 | | |
 |---|---|
-| `docket` on the `PATH` | The tool does the installing. See [docket](https://github.com/vadymdidenkolab/docket) |
+| `docket` on the `PATH` | The tool does the installing. See [docket](https://github.com/didenkolab/docket) |
 | git | Required. An app is a git repository, and what it wrote is reviewed and reverted as a diff |
 | Python 3.11 or newer, and `sh` | Only for the apps that bring programs, and for the hooks below |
 | Obsidian | Optional. A pack's boards and templates are files either way |
@@ -38,8 +38,8 @@ diff, then keep it or throw it away with `git checkout`.
 One app out of this library, named after a `#`:
 
 ```bash
-docket app add https://github.com/vadymdidenkolab/docket-apps.git#tests
-docket app add https://github.com/vadymdidenkolab/docket-apps.git#time
+docket app add https://github.com/didenkolab/docket-apps.git#tests
+docket app add https://github.com/didenkolab/docket-apps.git#time
 ```
 
 A library of them is one repository, because six apps in six repositories is six things to
@@ -48,7 +48,7 @@ clone, six histories to follow and six places for the same fix.
 The same form takes a path instead of a URL, which is how you install one you are editing:
 
 ```bash
-git clone https://github.com/vadymdidenkolab/docket-apps.git
+git clone https://github.com/didenkolab/docket-apps.git
 docket app add ./docket-apps#risks
 ```
 
@@ -170,13 +170,13 @@ the worked example — the largest app, with its own unit tests.
 
 | Repository | What |
 |---|---|
-| [`docket`](https://github.com/vadymdidenkolab/docket) | The tool: the CLI, the server and the MCP endpoint, as one Go binary |
-| [`docket-apps`](https://github.com/vadymdidenkolab/docket-apps) | This one |
-| [`docket-board`](https://github.com/vadymdidenkolab/docket-board) | The format's specification, the decisions and the roadmap — and the project's own board |
-| [`docket-template`](https://github.com/vadymdidenkolab/docket-template) | What a new vault starts as. `docket init` clones it |
-| [`docket-demo`](https://github.com/vadymdidenkolab/docket-demo) | A small vault to open and look at: two projects, seven tasks and a page |
+| [`docket`](https://github.com/didenkolab/docket) | The tool: the CLI, the server and the MCP endpoint, as one Go binary |
+| [`docket-apps`](https://github.com/didenkolab/docket-apps) | This one |
+| [`docket-board`](https://github.com/didenkolab/docket-board) | The format's specification, the decisions and the roadmap — and the project's own board |
+| [`docket-template`](https://github.com/didenkolab/docket-template) | What a new vault starts as. `docket init` clones it |
+| [`docket-demo`](https://github.com/didenkolab/docket-demo) | A small vault to open and look at: two projects, seven tasks and a page |
 | `docket-showcase` | An invented company's vault: three products, six people, twelve weeks, and every app here installed — built by a generator |
-| [`northlight`](https://github.com/vadymdidenkolab/northlight) | That invented company's code, beside its vault |
+| [`northlight`](https://github.com/didenkolab/northlight) | That invented company's code, beside its vault |
 
 Only `docket-template` is public today; the rest need access.
 
