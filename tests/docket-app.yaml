@@ -1,5 +1,5 @@
 name: tests
-version: "12"
+version: "13"
 description: Test management — plans, sets, tests, and the executions that record what happened
 
 # The model is Xray's, because Xray's is right about one thing: a run is not a
@@ -127,9 +127,6 @@ surfaces:
     - name: runs-here
       title: Runs in this execution
       run: hooks/runs-here.sh
-    - name: covered-by
-      title: Tested by
-      run: hooks/covered-by.sh
     - name: last-runs
       title: Last runs
       run: hooks/last-runs.sh

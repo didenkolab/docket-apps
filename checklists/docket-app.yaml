@@ -1,5 +1,5 @@
 name: checklists
-version: "2"
+version: "3"
 description: Progress through the acceptance list, on the task and across the board
 
 # Three of the marketplace's top hundred are checklists. The list is already
@@ -15,7 +15,7 @@ vocabulary:
 surfaces:
   panels:
     - name: progress
-      title: Acceptance
+      title: Progress
       run: hooks/progress.sh
   pages:
     - name: acceptance
