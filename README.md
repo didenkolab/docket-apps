@@ -1,6 +1,6 @@
 # docket apps
 
-A library of packs for an [docket](https://github.com/vadymdidenkolab/docket) vault: vocabulary
+A library of packs for a [docket](https://github.com/vadymdidenkolab/docket) vault: vocabulary
 and files a vault takes on, arriving as a diff you read before you commit it.
 
 Each folder here is one app — a manifest, and the files it brings. Twelve of them cover most of
@@ -158,7 +158,7 @@ a diff you read before you commit it.
 
 ### Writing your own
 
-Anyone can. An app is a git repository with an `docket-app.yaml` in it, and it
+Anyone can. An app is a git repository with a `docket-app.yaml` in it, and it
 is installed by pasting the URL — see [WRITING-AN-APP.md](WRITING-AN-APP.md).
 There is nothing to register with and nobody to ask.
 
